@@ -45,13 +45,14 @@ using math::constrain;
 namespace sensors
 {
 
-VehicleIMU::VehicleIMU(uint8_t accel_index, uint8_t gyro_index) :
+VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index) :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::navigation_and_controllers),
+	ScheduledWorkItem(MODULE_NAME, px4::ins_instance_to_wq(instance)),
 	_sensor_accel_sub(this, ORB_ID(sensor_accel), accel_index),
 	_sensor_gyro_sub(this, ORB_ID(sensor_gyro), gyro_index),
 	_accel_corrections(this, SensorCorrections::SensorType::Accelerometer),
-	_gyro_corrections(this, SensorCorrections::SensorType::Gyroscope)
+	_gyro_corrections(this, SensorCorrections::SensorType::Gyroscope),
+	_instance(instance)
 {
 	const float configured_interval_us = 1e6f / _param_imu_integ_rate.get();
 
@@ -76,6 +77,9 @@ VehicleIMU::~VehicleIMU()
 	perf_free(_accel_update_perf);
 	perf_free(_gyro_generation_gap_perf);
 	perf_free(_gyro_update_perf);
+
+	_vehicle_imu_pub.unadvertise();
+	_vehicle_imu_status_pub.unadvertise();
 }
 
 bool VehicleIMU::Start()
@@ -83,7 +87,10 @@ bool VehicleIMU::Start()
 	// force initial updates
 	ParametersUpdate(true);
 
-	return _sensor_gyro_sub.registerCallback() && _sensor_accel_sub.registerCallback();
+	_sensor_gyro_sub.registerCallback();
+	_sensor_accel_sub.registerCallback();
+
+	return true;
 }
 
 void VehicleIMU::Stop()
@@ -370,7 +377,7 @@ void VehicleIMU::UpdateGyroVibrationMetrics(const Vector3f &delta_angle)
 
 void VehicleIMU::PrintStatus()
 {
-	PX4_INFO("Accel ID: %d, interval: %.1f us, Gyro ID: %d, interval: %.1f us",
+	PX4_INFO("%d - Accel ID: %d, interval: %.1f us, Gyro ID: %d, interval: %.1f us", _instance,
 		 _accel_corrections.get_device_id(), (double)_accel_interval.update_interval,
 		 _gyro_corrections.get_device_id(), (double)_gyro_interval.update_interval);
 
