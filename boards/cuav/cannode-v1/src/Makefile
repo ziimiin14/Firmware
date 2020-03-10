@@ -1,6 +1,8 @@
 ############################################################################
 #
-#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
+#   Copyright (C) 2015 Gregory Nutt. All rights reserved.
+#   Author: Gregory Nutt <gnutt@nuttx.org>
+#           David Sidrane <david_s5@nscdg.com>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -12,7 +14,7 @@
 #    notice, this list of conditions and the following disclaimer in
 #    the documentation and/or other materials provided with the
 #    distribution.
-# 3. Neither the name PX4 nor the names of its contributors may be
+# 3. Neither the name NuttX nor the names of its contributors may be
 #    used to endorse or promote products derived from this software
 #    without specific prior written permission.
 #
@@ -31,30 +33,68 @@
 #
 ############################################################################
 
-set(SRCS)
+-include $(TOPDIR)/Make.defs
 
-if (NOT "${PX4_PLATFORM}" MATCHES "qurt" AND NOT "${PX4_BOARD}" MATCHES "io-v2" AND NOT "${PX4_BOARD_LABEL}" MATCHES "bootloader")
-	list(APPEND SRCS
-		px4_log.cpp
-		)
-endif()
+CFLAGS		+= -I$(TOPDIR)/sched
 
-add_library(px4_platform
-	board_identity.c
-	i2c.cpp
-	i2c_spi_buses.cpp
-	module.cpp
-	px4_getopt.c
-	px4_cli.cpp
-	shutdown.cpp
-	spi.cpp
-	${SRCS}
-	)
-add_dependencies(px4_platform prebuild_targets)
+ASRCS		=
+AOBJS		= $(ASRCS:.S=$(OBJEXT))
 
-if (NOT "${PX4_PLATFORM}" MATCHES "qurt" AND NOT "${PX4_BOARD}" MATCHES "io-v2")
-	target_link_libraries(px4_platform PRIVATE modules__uORB) # px4_log awkward dependency with uORB, TODO: orb should part of the platform layer
-endif()
+ifeq ($(CONFIG_BOOTLOADER),)
+CSRCS		= empty.c
+endif
+ifeq ($(CONFIG_BOOTLOADER),y)
 
-add_subdirectory(px4_work_queue)
-add_subdirectory(work_queue)
+SRC_SEARCH = 	bootloader/can bootloader/src bootloader/common bootloader/uavcan
+
+CSRCS		= ostubs.c
+
+CFLAGS += $(addprefix -I,$(SRC_SEARCH))
+DEPOPTS = $(addprefix --dep-path ,$(SRC_SEARCH))
+VPATH= 	$(SRC_SEARCH)
+endif
+
+COBJS		= $(CSRCS:.c=$(OBJEXT))
+
+SRCS		= $(ASRCS) $(CSRCS)
+OBJS		= $(AOBJS) $(COBJS)
+
+ARCH_SRCDIR	= $(TOPDIR)/arch/$(CONFIG_ARCH)/src
+ifeq ($(WINTOOL),y)
+  CFLAGS	+= -I "${shell cygpath -w $(ARCH_SRCDIR)/chip}" \
+			   -I "${shell cygpath -w $(ARCH_SRCDIR)/common}" \
+			   -I "${shell cygpath -w $(ARCH_SRCDIR)/armv7-m}"
+else
+  CFLAGS	+= -I$(ARCH_SRCDIR)/chip -I$(ARCH_SRCDIR)/common -I$(ARCH_SRCDIR)/armv7-m
+endif
+
+all: libboard$(LIBEXT)
+
+$(AOBJS): %$(OBJEXT): %.S
+	$(call ASSEMBLE, $<, $@)
+
+$(COBJS) $(LINKOBJS): %$(OBJEXT): %.c
+	$(call COMPILE, $<, $@)
+
+libboard$(LIBEXT): $(OBJS)
+	$(call ARCHIVE, $@, $(OBJS))
+
+.depend: Makefile $(SRCS)
+	@$(MKDEP) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
+	@touch $@
+
+depend: .depend
+
+clean:
+	$(call DELFILE, libboard$(LIBEXT))
+	$(call CLEAN)
+
+distclean: clean
+	$(call DELFILE, Make.dep)
+	$(call DELFILE, .depend)
+
+ifneq ($(BOARD_CONTEXT),y)
+context:
+endif
+
+-include Make.dep

@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2020 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,30 +31,35 @@
 #
 ############################################################################
 
-set(SRCS)
-
-if (NOT "${PX4_PLATFORM}" MATCHES "qurt" AND NOT "${PX4_BOARD}" MATCHES "io-v2" AND NOT "${PX4_BOARD_LABEL}" MATCHES "bootloader")
-	list(APPEND SRCS
-		px4_log.cpp
-		)
-endif()
-
-add_library(px4_platform
-	board_identity.c
-	i2c.cpp
-	i2c_spi_buses.cpp
-	module.cpp
-	px4_getopt.c
-	px4_cli.cpp
-	shutdown.cpp
-	spi.cpp
-	${SRCS}
+if("${PX4_BOARD_LABEL}" STREQUAL  "canbootloader")
+	add_library(drivers_board
+		boot_config.h
+		boot.c
+		led.c
+		led.h
 	)
-add_dependencies(px4_platform prebuild_targets)
+	target_link_libraries(drivers_board
+		PRIVATE
+			nuttx_arch
+			nuttx_drivers
+			canbootloader
+	)
+	target_include_directories(drivers_board PRIVATE ${PX4_SOURCE_DIR}/platforms/nuttx/src/canbootloader)
 
-if (NOT "${PX4_PLATFORM}" MATCHES "qurt" AND NOT "${PX4_BOARD}" MATCHES "io-v2")
-	target_link_libraries(px4_platform PRIVATE modules__uORB) # px4_log awkward dependency with uORB, TODO: orb should part of the platform layer
+else()
+	add_library(drivers_board
+		can.c
+		i2c.cpp
+		init.c
+		spi.cpp
+	)
+
+	target_link_libraries(drivers_board
+		PRIVATE
+			arch_spi
+			nuttx_arch
+			nuttx_drivers
+			px4_layer
+			arch_io_pins
+	)
 endif()
-
-add_subdirectory(px4_work_queue)
-add_subdirectory(work_queue)
