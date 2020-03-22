@@ -54,6 +54,8 @@ ICM20602::ICM20602(I2CSPIBusOption bus_option, int bus, uint32_t device, enum Ro
 ICM20602::~ICM20602()
 {
 	perf_free(_transfer_perf);
+	perf_free(_accel_update_interval_perf);
+	perf_free(_gyro_update_interval_perf);
 	perf_free(_bad_register_perf);
 	perf_free(_bad_transfer_perf);
 	perf_free(_fifo_empty_perf);
@@ -95,6 +97,8 @@ void ICM20602::print_status()
 		 static_cast<double>(1000000 / _fifo_empty_interval_us));
 
 	perf_print_counter(_transfer_perf);
+	perf_print_counter(_accel_update_interval_perf);
+	perf_print_counter(_gyro_update_interval_perf);
 	perf_print_counter(_bad_register_perf);
 	perf_print_counter(_bad_transfer_perf);
 	perf_print_counter(_fifo_empty_perf);
@@ -193,6 +197,8 @@ void ICM20602::RunImpl()
 				// timestamp set in data ready interrupt
 				samples = _fifo_read_samples.load();
 				timestamp_sample = _fifo_watermark_interrupt_timestamp;
+
+				perf_count_interval(_drdy_interval_perf, _fifo_watermark_interrupt_timestamp);
 			}
 
 			bool failure = false;
@@ -361,7 +367,6 @@ int ICM20602::DataReadyInterruptCallback(int irq, void *context, void *arg)
 
 void ICM20602::DataReady()
 {
-	perf_count(_drdy_interval_perf);
 	_fifo_watermark_interrupt_timestamp = hrt_absolute_time();
 	_fifo_read_samples.store(_fifo_gyro_samples);
 	ScheduleNow();
@@ -570,6 +575,8 @@ bool ICM20602::ProcessAccel(const hrt_abstime &timestamp_sample, const FIFOTrans
 
 	_px4_accel.updateFIFO(accel);
 
+	perf_count_interval(_accel_update_interval_perf, accel.timestamp_sample);
+
 	return !bad_data;
 }
 
@@ -595,6 +602,8 @@ void ICM20602::ProcessGyro(const hrt_abstime &timestamp_sample, const FIFOTransf
 	}
 
 	_px4_gyro.updateFIFO(gyro);
+
+	perf_count_interval(_gyro_update_interval_perf, gyro.timestamp_sample);
 }
 
 bool ICM20602::ProcessTemperature(const FIFOTransferBuffer &buffer, const uint8_t samples)
