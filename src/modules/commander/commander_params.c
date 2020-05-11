@@ -912,3 +912,18 @@ PARAM_DEFINE_FLOAT(COM_KILL_DISARM, 5.0f);
  * @increment 1
  */
 PARAM_DEFINE_FLOAT(COM_CPU_MAX, 90.0f);
+
+/**
+* Maximum airspeed allowed for arming.
+*
+* Deny arming if the current airspeed measurement is greater than this value.
+* Excessive airspeed measurements on ground are either caused by wind or bad airspeed calibration.
+*
+* @group Commander
+* @unit m/s
+* @min 0.5
+* @max 30.0
+* @decimal 1
+* @increment 0.1
+*/
+PARAM_DEFINE_FLOAT(COM_ARM_ARSP_MAX, 4.0f);
