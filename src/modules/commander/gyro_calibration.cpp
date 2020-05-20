@@ -217,8 +217,6 @@ int do_gyro_calibration(orb_advert_t *mavlink_log_pub)
 	worker_data.mavlink_log_pub = mavlink_log_pub;
 
 	gyro_calibration_s gyro_scale_zero{};
-	int device_prio_max = 0;
-	int32_t device_id_primary = 0;
 
 	worker_data.sensor_correction_sub = orb_subscribe(ORB_ID(sensor_correction));
 
@@ -330,17 +328,7 @@ int do_gyro_calibration(orb_advert_t *mavlink_log_pub)
 			break;
 		}
 
-		if (worker_data.device_id[cur_gyro] != 0) {
-			// Get priority
-			ORB_PRIO prio = ORB_PRIO_UNINITIALIZED;
-			orb_priority(worker_data.gyro_sensor_sub[cur_gyro], &prio);
-
-			if (prio > device_prio_max) {
-				device_prio_max = prio;
-				device_id_primary = worker_data.device_id[cur_gyro];
-			}
-
-		} else {
+		if (worker_data.device_id[cur_gyro] == 0) {
 			calibration_log_critical(mavlink_log_pub, "Gyro #%u no device id, abort", cur_gyro);
 		}
 	}
@@ -406,8 +394,6 @@ int do_gyro_calibration(orb_advert_t *mavlink_log_pub)
 
 		/* set offset parameters to new values */
 		bool failed = false;
-
-		failed = failed || (PX4_OK != param_set_no_notification(param_find("CAL_GYRO_PRIME"), &(device_id_primary)));
 
 		bool tc_locked[3] = {false}; // true when the thermal parameter instance has already been adjusted by the calibrator
 

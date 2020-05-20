@@ -50,7 +50,7 @@ extern "C" __EXPORT int ak09916_main(int argc, char *argv[]);
 AK09916::AK09916(I2CSPIBusOption bus_option, const int bus, int bus_frequency, enum Rotation rotation) :
 	I2C(DRV_MAG_DEVTYPE_AK09916, MODULE_NAME, bus, AK09916_I2C_ADDR, bus_frequency),
 	I2CSPIDriver(MODULE_NAME, px4::device_bus_to_wq(get_device_id()), bus_option, bus),
-	_px4_mag(get_device_id(), external() ? ORB_PRIO_VERY_HIGH : ORB_PRIO_DEFAULT, rotation),
+	_px4_mag(get_device_id(), rotation),
 	_mag_reads(perf_alloc(PC_COUNT, MODULE_NAME": mag_reads")),
 	_mag_errors(perf_alloc(PC_COUNT, MODULE_NAME": mag_errors")),
 	_mag_overruns(perf_alloc(PC_COUNT, MODULE_NAME": mag_overruns")),

@@ -85,12 +85,11 @@ const uint16_t ICM20948::_icm20948_checked_registers[ICM20948_NUM_CHECKED_REGIST
 										       };
 
 ICM20948::ICM20948(device::Device *interface, device::Device *mag_interface, enum Rotation rotation,
-		   I2CSPIBusOption bus_option,
-		   int bus) :
+		   I2CSPIBusOption bus_option, int bus) :
 	I2CSPIDriver(MODULE_NAME, px4::device_bus_to_wq(interface->get_device_id()), bus_option, bus),
 	_interface(interface),
-	_px4_accel(_interface->get_device_id(), (_interface->external() ? ORB_PRIO_DEFAULT : ORB_PRIO_HIGH), rotation),
-	_px4_gyro(_interface->get_device_id(), (_interface->external() ? ORB_PRIO_DEFAULT : ORB_PRIO_HIGH), rotation),
+	_px4_accel(_interface->get_device_id(), rotation),
+	_px4_gyro(_interface->get_device_id(), rotation),
 	_mag(this, mag_interface, rotation),
 	_selected_bank(0xFF),	// invalid/improbable bank value, will be set on first read/write
 	_dlpf_freq(ICM20948_DEFAULT_ONCHIP_FILTER_FREQ),

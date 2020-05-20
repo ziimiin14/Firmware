@@ -155,8 +155,6 @@ using namespace matrix;
 static const char *sensor_name = "accel";
 
 static int32_t device_id[max_accel_sens];
-static int device_prio_max = 0;
-static int32_t device_id_primary = 0;
 
 calibrate_return do_accel_calibration_measurements(orb_advert_t *mavlink_log_pub,
 		float (&accel_offs)[max_accel_sens][3], float (&accel_T)[max_accel_sens][3][3], unsigned *active_sensors);
@@ -318,9 +316,6 @@ int do_accel_calibration(orb_advert_t *mavlink_log_pub)
 		accel_scale.z_scale = accel_T_rotated(2, 2);
 
 		bool failed = false;
-
-		failed = failed || (PX4_OK != param_set_no_notification(param_find("CAL_ACC_PRIME"), &(device_id_primary)));
-
 
 		PX4_INFO("found offset %d: x: %.6f, y: %.6f, z: %.6f", uorb_index,
 			 (double)accel_scale.x_offset,
@@ -554,17 +549,7 @@ calibrate_return do_accel_calibration_measurements(orb_advert_t *mavlink_log_pub
 			break;
 		}
 
-		if (device_id[cur_accel] != 0) {
-			// Get priority
-			ORB_PRIO prio = ORB_PRIO_UNINITIALIZED;
-			orb_priority(worker_data.subs[cur_accel], &prio);
-
-			if (prio > device_prio_max) {
-				device_prio_max = prio;
-				device_id_primary = device_id[cur_accel];
-			}
-
-		} else {
+		if (device_id[cur_accel] == 0) {
 			calibration_log_critical(mavlink_log_pub, "Accel #%u no device id, abort", cur_accel);
 			result = calibrate_return_error;
 			break;

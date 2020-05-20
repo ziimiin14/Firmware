@@ -36,9 +36,9 @@
 
 #include <lib/drivers/device/Device.hpp>
 
-PX4Magnetometer::PX4Magnetometer(uint32_t device_id, ORB_PRIO priority, enum Rotation rotation) :
+PX4Magnetometer::PX4Magnetometer(uint32_t device_id, enum Rotation rotation) :
 	CDev(nullptr),
-	_sensor_mag_pub{ORB_ID(sensor_mag), priority},
+	_sensor_mag_pub{ORB_ID(sensor_mag)},
 	_rotation{rotation}
 {
 	_class_device_instance = register_class_devname(MAG_BASE_DEVICE_PATH);
