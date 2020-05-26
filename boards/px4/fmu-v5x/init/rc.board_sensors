@@ -21,11 +21,6 @@ bmi088 -A -R 12 -s start
 # Internal SPI bus BMI088 gyro
 bmi088 -G -R 12 -s start
 
-# Possible external compasses
-ist8310 -X start
-hmc5883 -T -X start
-qmc5883 -X start
-
 # Possible internal compass
 bmm150 -I start
 
@@ -37,4 +32,10 @@ bmp388 -I -a 0x77 start
 ms5611 -X start
 
 # External RM3100
+rm3100 -X start
+
+# Possible external compasses
+ist8310 -X start
+hmc5883 -T -X start
+qmc5883l -X start
 rm3100 -X start

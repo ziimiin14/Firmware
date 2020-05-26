@@ -32,7 +32,7 @@ bmi055 -G -R 10 -s start
 # Possible external compasses
 ist8310 -X start
 hmc5883 -T -X start
-qmc5883 -X start
+qmc5883l -X start
 lis3mdl -X start
 
 # ICM20948 as external magnetometer on I2C (e.g. Here GPS)

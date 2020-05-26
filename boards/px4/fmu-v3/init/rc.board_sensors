@@ -7,13 +7,6 @@ rgbled start -I
 
 adc start
 
-# External I2C bus
-hmc5883 -T -X start
-lis3mdl -X start
-ist8310 -X start
-qmc5883 -X start
-rm3100 -X start
-
 # Internal I2C bus
 hmc5883 -T -I -R 4 start
 
@@ -121,3 +114,11 @@ else
 fi
 
 unset BOARD_FMUV3
+
+# External I2C bus
+hmc5883 -T -X start
+lis3mdl -X start
+ist8310 -X start
+qmc5883l -X start
+rm3100 -X start
+

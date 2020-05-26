@@ -9,7 +9,7 @@ adc start
 hmc5883 -X start
 lis3mdl -X start
 ist8310 -X start
-qmc5883 -X start
+qmc5883l -X start
 
 # Internal Mag I2C bus roll 180, yaw 90
 bmm150 -I -R 10 start
