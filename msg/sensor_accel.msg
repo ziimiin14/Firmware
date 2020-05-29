@@ -13,4 +13,4 @@ uint32 error_count
 
 uint8[3] clip_counter     # clip count per axis in the sample period
 
-uint8 ORB_QUEUE_LENGTH = 8
+uint8 ORB_QUEUE_LENGTH = 10

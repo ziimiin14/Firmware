@@ -23,11 +23,9 @@ icm20602 -R 2 -s start
 # Internal SPI bus ICM-20689
 icm20689 -R 2 -s start
 
-# Internal SPI bus BMI055 accel
-bmi055 -A -R 10 -s start
-
-# Internal SPI bus BMI055 gyro
-bmi055 -G -R 10 -s start
+# Internal SPI bus BMI055
+bmi055 -A -R 2 -s start
+bmi055 -G -R 2 -s start
 
 # Possible external compasses
 ist8310 -X start

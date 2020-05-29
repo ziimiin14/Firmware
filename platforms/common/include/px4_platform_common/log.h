@@ -121,6 +121,8 @@ __END_DECLS
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <drivers/drv_hrt.h>
+
 #include <px4_platform_common/defines.h>
 
 __BEGIN_DECLS
