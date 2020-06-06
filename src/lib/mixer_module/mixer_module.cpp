@@ -159,6 +159,10 @@ bool MixingOutput::updateSubscriptions(bool allow_wq_switch)
 			// TODO: this might need to be configurable depending on the module
 			_interface.ScheduleOnInterval(100_ms);
 		}
+
+		// TODO: move to pwm_out
+		// prevent excessive back to back runs
+		_interface.set_minimum_interval_us(500_us);
 	}
 
 	_groups_subscribed = _groups_required;
