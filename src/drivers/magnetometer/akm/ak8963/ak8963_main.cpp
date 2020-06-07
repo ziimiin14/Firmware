@@ -31,82 +31,76 @@
  *
  ****************************************************************************/
 
-/**
- * @file AK8963.hpp
- *
- * Driver for the AKM AK8963 connected via I2C.
- *
- */
+#include "AK8963.hpp"
 
-#pragma once
+#include <px4_platform_common/getopt.h>
+#include <px4_platform_common/module.h>
 
-#include "AKM_AK8963_registers.hpp"
-
-#include <drivers/drv_hrt.h>
-#include <lib/drivers/device/i2c.h>
-#include <lib/drivers/magnetometer/PX4Magnetometer.hpp>
-#include <lib/perf/perf_counter.h>
-#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
-
-class MPU9250;
-
-namespace AKM_AK8963
+I2CSPIDriverBase *AK8963::instantiate(const BusCLIArguments &cli, const BusInstanceIterator &iterator,
+				      int runtime_instance)
 {
+	AK8963 *instance = new AK8963(iterator.configuredBusOption(), iterator.bus(), cli.bus_frequency, cli.rotation);
 
-class MPU9250_AK8963 : public px4::ScheduledWorkItem
+	if (!instance) {
+		PX4_ERR("alloc failed");
+		return nullptr;
+	}
+
+	if (instance->init() != PX4_OK) {
+		delete instance;
+		PX4_DEBUG("no device on bus %i (devid 0x%x)", iterator.bus(), iterator.devid());
+		return nullptr;
+	}
+
+	return instance;
+}
+
+void AK8963::print_usage()
 {
-public:
-	MPU9250_AK8963(MPU9250 &mpu9250, enum Rotation rotation = ROTATION_NONE);
-	~MPU9250_AK8963() override;
+	PRINT_MODULE_USAGE_NAME("ak8963", "driver");
+	PRINT_MODULE_USAGE_SUBCATEGORY("magnetometer");
+	PRINT_MODULE_USAGE_COMMAND("start");
+	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(true, false);
+	PRINT_MODULE_USAGE_PARAM_INT('R', 0, 0, 35, "Rotation", true);
+	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+}
 
-	bool Reset();
-	void PrintInfo();
+extern "C" __EXPORT int ak8963_main(int argc, char *argv[])
+{
+	int ch;
+	using ThisDriver = AK8963;
+	BusCLIArguments cli{true, false};
+	cli.default_i2c_frequency = I2C_SPEED;
 
-private:
+	while ((ch = cli.getopt(argc, argv, "R:")) != EOF) {
+		switch (ch) {
+		case 'R':
+			cli.rotation = (enum Rotation)atoi(cli.optarg());
+			break;
+		}
+	}
 
-	struct TransferBuffer {
-		uint8_t HXL;
-		uint8_t HXH;
-		uint8_t HYL;
-		uint8_t HYH;
-		uint8_t HZL;
-		uint8_t HZH;
-		uint8_t ST2;
-	};
+	const char *verb = cli.optarg();
 
-	struct register_config_t {
-		AKM_AK8963::Register reg;
-		uint8_t set_bits{0};
-		uint8_t clear_bits{0};
-	};
+	if (!verb) {
+		ThisDriver::print_usage();
+		return -1;
+	}
 
-	void Run() override;
+	BusInstanceIterator iterator(MODULE_NAME, cli, DRV_MAG_DEVTYPE_AK8963);
 
-	MPU9250 &_mpu9250;
+	if (!strcmp(verb, "start")) {
+		return ThisDriver::module_start(cli, iterator);
+	}
 
-	PX4Magnetometer _px4_mag;
+	if (!strcmp(verb, "stop")) {
+		return ThisDriver::module_stop(iterator);
+	}
 
-	perf_counter_t _transfer_perf{perf_alloc(PC_ELAPSED, MODULE_NAME"_ak8963: transfer")};
-	perf_counter_t _bad_register_perf{perf_alloc(PC_COUNT, MODULE_NAME"_ak8963: bad register")};
-	perf_counter_t _bad_transfer_perf{perf_alloc(PC_COUNT, MODULE_NAME"_ak8963: bad transfer")};
-	perf_counter_t _duplicate_data_perf{perf_alloc(PC_COUNT, MODULE_NAME"_ak8963: duplicate data")};
+	if (!strcmp(verb, "status")) {
+		return ThisDriver::module_status(iterator);
+	}
 
-	hrt_abstime _reset_timestamp{0};
-	hrt_abstime _last_config_check_timestamp{0};
-	unsigned _consecutive_failures{0};
-
-	int16_t _last_measurement[3] {};
-
-	bool _sensitivity_adjustments_loaded{false};
-	float _sensitivity[3] {1.f, 1.f, 1.f};
-
-	enum class STATE : uint8_t {
-		RESET,
-		READ_WHO_AM_I,
-		WAIT_FOR_RESET,
-		READ_SENSITIVITY_ADJUSTMENTS,
-		READ,
-	} _state{STATE::RESET};
-};
-
-} // namespace AKM_AK8963
+	ThisDriver::print_usage();
+	return -1;
+}
